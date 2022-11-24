@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -ex
+
+HOST_NAME="${HOST_NAME:-rancher}"
+CLUSTER_NAME="${CLUSTER_NAME:-telemetry}"
+
+# Is the volume attached to be able to transfer data between the host and the cluster?
+# mkdir /tmp/k3d
+# k3d cluster create multinode --agents 1 --servers 1 --volume /tmp/k3d:/tmp/k3d
+while ! k3d cluster create ${CLUSTER_NAME} --agents 1 --servers 1; do
+    k3d cluster delete ${CLUSTER_NAME}
+    # echo "Cluster found, should I delete it first?"
+    # read confirm
+    # echo "You said ${confirm}"
+    # if [ "${confirm}" = "yes" ]; then
+    #     k3d cluster delete ${CLUSTER_NAME}
+    # fi
+done
+
+kubectl create namespace cattle-system
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.1/cert-manager.crds.yaml
+helm install cert-manager jetstack/cert-manager \
+    --namespace cert-manager \
+    --create-namespace \
+    --version v1.5.1 \
+    --atomic
+kubectl wait --namespace cert-manager --for=condition=ready pod --all --timeout=30s
+
+echo "Installing Rancher...."
+helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=${HOST_NAME} --set replicas=1 --atomic
+# kubectl -n cattle-system rollout status deploy/rancher
+
+echo "Showing ingress"
+kubectl get ingress -A
+
+echo "Bootstrap password"
+kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{"\n"}}'
