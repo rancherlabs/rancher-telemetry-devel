@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -ex
+
+url="https://raw.githubusercontent.com/rancher/telemetry/master/scripts/create_db.sql"
+curl -fSsl $url > create_db.sql
+docker build -t $USER/rancher-telemetry .
