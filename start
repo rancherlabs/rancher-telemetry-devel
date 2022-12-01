@@ -1,38 +1,150 @@
 #!/bin/bash
 
-set -ex
+#set -ex
 
 HOST_NAME="${HOST_NAME:-rancher}"
 CLUSTER_NAME="${CLUSTER_NAME:-telemetry}"
 
-# Is the volume attached to be able to transfer data between the host and the cluster?
-# mkdir /tmp/k3d
-# k3d cluster create multinode --agents 1 --servers 1 --volume /tmp/k3d:/tmp/k3d
-while ! k3d cluster create ${CLUSTER_NAME} --agents 1 --servers 1; do
-    k3d cluster delete ${CLUSTER_NAME}
-    # echo "Cluster found, should I delete it first?"
-    # read confirm
-    # echo "You said ${confirm}"
-    # if [ "${confirm}" = "yes" ]; then
-    #     k3d cluster delete ${CLUSTER_NAME}
-    # fi
-done
+function k3d-create() {
+  while ! k3d cluster create "${CLUSTER_NAME}" --agents 1 --servers 1; do
+    k3d cluster delete "${CLUSTER_NAME}"
+  done
+}
 
-kubectl create namespace cattle-system
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.1/cert-manager.crds.yaml
-helm install cert-manager jetstack/cert-manager \
+function install-rancher() {
+  echo "Installing cert-manager"
+  helm repo add jetstack https://charts.jetstack.io
+  kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.1/cert-manager.crds.yaml
+  helm install cert-manager jetstack/cert-manager \
     --namespace cert-manager \
     --create-namespace \
     --version v1.5.1 \
     --atomic
-kubectl wait --namespace cert-manager --for=condition=ready pod --all --timeout=30s
+  kubectl wait --namespace cert-manager --for=condition=ready pod --all --timeout=30s
 
-echo "Installing Rancher...."
-helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=${HOST_NAME} --set replicas=1 --atomic
-# kubectl -n cattle-system rollout status deploy/rancher
+  echo "Installing Rancher..."
+  helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+  kubectl create namespace cattle-system
+  helm install rancher rancher-stable/rancher \
+    --set bootstrapPassword=admin \
+    --namespace cattle-system \
+    --set hostname="${HOST_NAME}" \
+    --set replicas=1 \
+    --atomic
+}
 
-echo "Showing ingress"
-kubectl get ingress -A
+function configure-hostnames() {
+  # Get the IP address of one of the nodes.
+  local addr
+  addr=$(k3d node list -o json | jq -r '.[0].IP.IP')
+  # Do a backup once, but don't overwrite it.
+  if [ ! -f /etc/hosts.bak ]; then
+    sudo cp -a /etc/hosts /etc/hosts.bak
+  fi
+  sudo sed -n -e "/ ${HOST_NAME}/!p" -i /etc/hosts
+  echo "${addr} ${HOST_NAME}" | sudo tee -a /etc/hosts >/dev/null
+}
 
-echo "Bootstrap password"
-kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{"\n"}}'
+# Get login token, good for 1 minute.
+function get-login-token() {
+  local login_token
+  login_token=$(
+    curl -k -s -X POST \
+      "https://${HOST_NAME}/v3-public/localProviders/local?action=login" \
+      -H 'content-type: application/json' \
+      --data-binary '{"username":"admin","password":"admin"}' |
+      jq -r .token
+  )
+
+  if [ "$?" -ne 0 ]; then
+    echo >&2 "Login token could not be acquired"
+    return 1
+  fi
+
+  echo "${login_token}"
+}
+
+function change-password() {
+  local token
+  if [ -z "$1" ]; then
+    echo >&2 "The first argument must be an API token"
+    return 1
+  fi
+  token="$1"
+
+  # Change password
+  curl -k -s -X POST \
+    "https://${HOST_NAME}/v3/users?action=changepassword" \
+    -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer $token" \
+    --data-binary '{"currentPassword":"admin","newPassword":"something better"}'
+}
+
+# Create API key, good forever.
+function create-api-key() {
+  local login_token
+  if [ -z "$1" ]; then
+    echo >&2 "The first argument must be a login token"
+    return 1
+  else
+    login_token="$1"
+  fi
+
+  local api_key
+  api_key=$(
+    curl -k -s \
+      -X POST \
+      "https://${HOST_NAME}/v3/token" \
+      -H 'Content-Type: application/json' \
+      -H "Authorization: Bearer $login_token" \
+      --data-binary '{"type":"token","description":"for scripts and stuff"}' |
+      jq -r .token
+  )
+
+  if [ "$?" -ne 0 ]; then
+    echo >&2 "API key could not be acquired"
+    return 1
+  fi
+
+  echo "${api_key}"
+}
+
+# Set server-url
+function change-server-url() {
+  local api_key
+  if [ -z "$1" ]; then
+    echo >&2 "The first argument must be an API token"
+    return 1
+  else
+    api_key="$1"
+  fi
+  curl -k -s \
+    "https://${HOST_NAME}/v3/settings/server-url" \
+    -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer $api_key" \
+    -X PUT \
+    --data-binary "{\"name\":\"server-url\",\"value\":\"https://${HOST_NAME}/\"}"
+
+  if [ "$?" -ne "0" ]; then
+    echo >&2 "Changing server URL failed"
+  fi
+}
+
+function postgres-install() {
+  helm install postgresql charts/postgres
+}
+
+function start() {
+  k3d-create
+  install-rancher
+  configure-hostnames
+  local api_key
+  api_key=$(create-api-key "$(get-login-token)")
+  change-server-url "$api_key"
+#  change-password "$api_key"
+}
+
+# Only run start if script wasn't sourced.
+if ! (return 0 2>/dev/null); then
+  start
+fi

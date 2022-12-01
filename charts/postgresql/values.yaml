@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: 0xavi0/telemetry-pg
+  repository: pseidensal/rancher-telemetry-postgresql
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"

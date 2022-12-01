@@ -37,6 +37,12 @@ spec:
             - name: pgsql
               containerPort: 5432
               protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: pgsql
+          readinessProbe:
+            tcpSocket:
+              port: pgsql
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
