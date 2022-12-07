@@ -36,7 +36,10 @@ function install-rancher() {
 function configure-hostnames() {
   # Get the IP address of one of the nodes.
   local addr
-  addr=$(k3d node list -o json | jq -r '.[0].IP.IP')
+  addr=$(
+    k3d node list -o json | \
+      jq -r "[ .[] | select(.name | contains(\"telemetry\")) | .IP.IP ][0]"
+  )
   # Do a backup once, but don't overwrite it.
   if [ ! -f /etc/hosts.bak ]; then
     sudo cp -a /etc/hosts /etc/hosts.bak
