@@ -80,7 +80,7 @@ function change-password() {
     "https://${HOST_NAME}/v3/users?action=changepassword" \
     -H 'Content-Type: application/json' \
     -H "Authorization: Bearer $token" \
-    --data-binary '{"currentPassword":"admin","newPassword":"something better"}'
+    --data-binary '{"currentPassword":"admin","newPassword":"dev-admin-pw"}'
 }
 
 # Create API key, good forever.
@@ -144,7 +144,8 @@ function start() {
   local api_key
   api_key=$(create-api-key "$(get-login-token)")
   change-server-url "$api_key"
-#  change-password "$api_key"
+  # Required to skip the setup screen
+  change-password "$api_key"
 }
 
 # Only run start if script wasn't sourced.
