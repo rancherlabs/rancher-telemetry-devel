@@ -2,8 +2,8 @@
 
 #set -ex
 
-HOST_NAME="${HOST_NAME:-rancher}"
-CLUSTER_NAME="${CLUSTER_NAME:-telemetry}"
+: "${HOST_NAME:=rancher}"
+: "${CLUSTER_NAME:=telemetry}"
 
 function k3d-create() {
   while ! k3d cluster create "${CLUSTER_NAME}" --agents 1 --servers 1; do
@@ -37,7 +37,7 @@ function configure-hostnames() {
   # Get the IP address of one of the nodes.
   local addr
   addr=$(
-    k3d node list -o json | \
+    k3d node list -o json |
       jq -r "[ .[] | select(.name | contains(\"telemetry\")) | .IP.IP ][0]"
   )
   # Do a backup once, but don't overwrite it.
