@@ -137,6 +137,11 @@ function postgres-install() {
   helm install postgresql charts/postgres
 }
 
+function influx-install() {
+  helm repo add influxdata https://helm.influxdata.com
+  helm upgrade -i influxdb --version 4.12.0 influxdata/influxdb
+}
+
 function start() {
   k3d-create
   install-rancher
