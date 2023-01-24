@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: postgresql
+  name: postgresql
+  namespace: telemetry
+spec:
+  selector:
+    matchLabels:
+      name: postgresql
+  template:
+    metadata:
+      labels:
+        name: postgresql
+    spec:
+      containers:
+      - image: postgres
+        name: postgres
+        imagePullPolicy: Always
+        livenessProbe:  # restarts containers (kill)
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: pgsql
+          timeoutSeconds: 1
+        readinessProbe:  # doesn't kill the container, just stops serving traffic
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: pgsql
+          timeoutSeconds: 1
+        startupProbe:  # other probes pause till this one succeeds
+          tcpSocket:
+            port: pgsql
+          failureThreshold: 86400
+          periodSeconds: 10
+        env:
+          - name: POSTGRES_USER
+            value: admin
+          - name: POSTGRES_PASSWORD
+            value: admin
+          - name: POSTGRES_DB
+            value: telemetry
+        ports:
+        - containerPort: 5432
+          name: pgsql
+          protocol: TCP
+        resources: { }
+        volumeMounts:
+          - name: pgdata
+            mountPath: /var/lib/postgresql/data
+          - name: dump
+            mountPath: /docker-entrypoint-initdb.d
+            readOnly: true
+      - image: dpage/pgadmin4
+        name: pgadmin
+        imagePullPolicy: IfNotPresent
+        resources: {}
+        env:
+          - name: PGADMIN_DEFAULT_EMAIL
+            value: admin@local.host
+          - name: PGADMIN_DEFAULT_PASSWORD
+            value: admin
+      volumes:
+        - name: pgdata
+          hostPath:
+            path: /var/lib/postgresql/data
+        - name: dump
+          hostPath:
+            path: /var/lib/postgresql/docker-entrypoint-initdb.d
