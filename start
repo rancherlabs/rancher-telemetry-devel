@@ -3,11 +3,30 @@
 : "${HOST_NAME:=rancher}"
 : "${CLUSTER_NAME:=telemetry}"
 
+function setup-volume() {
+  if [ ! -d /var/lib/postgresql ]; then
+    if ! mkdir -p /var/lib/postgresql; then
+      sudo mkdir -p /var/lib/postgresql
+    fi
+  fi
+  if [ ! -d /var/lib/postgresql/data ]; then
+    if ! mkdir -p /var/lib/postgresql/data; then
+      sudo mkdir -p /var/lib/postgresql/data
+    fi
+  fi
+  if [ ! -d /var/lib/postgresql/docker-entrypoint-initdb.d ]; then
+    if ! mkdir -p /var/lib/postgresql/docker-entrypoint-initdb.d; then
+      sudo mkdir -p /var/lib/postgresql/docker-entrypoint-initdb.d
+    fi
+  fi
+  echo "CREATE ROLE telemetry WITH PASSWORD 'telemetry';" | sudo tee \
+    /var/lib/postgresql/docker-entrypoint-initdb.d/000-init.sql
+}
+
 function k3d-create() {
-  while ! k3d cluster create "${CLUSTER_NAME}" \
-    --agents 1 \
-    --servers 1 \
-    --volume /var/lib/postgresql/:/var/lib/postgresql; do
+  local create_command="k3d cluster create ${CLUSTER_NAME} --agents 1 --servers 1"
+  create_command="$create_command --volume /var/lib/postgresql:/var/lib/postgresql"
+  while ! $create_command; do
     k3d cluster delete "${CLUSTER_NAME}"
   done
 }
@@ -146,6 +165,7 @@ function install-influx() {
 }
 
 function install-base() {
+  setup-volume
   k3d-create
   install-rancher
   configure-hostnames
