@@ -149,7 +149,7 @@ function install-influx() {
   helm upgrade -i influxdb --version 4.12.0 influxdata/influxdb
 }
 
-function start() {
+function install-base() {
   k3d-create
   install-rancher
   configure-hostnames
@@ -158,7 +158,10 @@ function start() {
   api_key=$(create-api-key "$(get-login-token)")
   change-server-url "$api_key"
   change-password "$api_key" # Required to skip the setup screen
+}
 
+function start() {
+  install-base
   install-postgres
   install-influx
 }
