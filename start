@@ -9,9 +9,7 @@ function k3d-create() {
   while ! k3d cluster create "${CLUSTER_NAME}" \
     --agents 1 \
     --servers 1 \
-    --volume /var/lib/postgresql/:/var/lib/postgresql
-
-  do
+    --volume /var/lib/postgresql/:/var/lib/postgresql; do
     k3d cluster delete "${CLUSTER_NAME}"
   done
 }
