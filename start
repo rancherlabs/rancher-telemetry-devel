@@ -6,7 +6,12 @@
 : "${CLUSTER_NAME:=telemetry}"
 
 function k3d-create() {
-  while ! k3d cluster create "${CLUSTER_NAME}" --agents 1 --servers 1; do
+  while ! k3d cluster create "${CLUSTER_NAME}" \
+    --agents 1 \
+    --servers 1 \
+    --volume /var/lib/postgresql/:/var/lib/postgresql
+
+  do
     k3d cluster delete "${CLUSTER_NAME}"
   done
 }
@@ -40,7 +45,7 @@ function configure-hostnames() {
     k3d node list -o json |
       jq -r "[ .[] | select(.name | contains(\"telemetry\")) | .IP.IP ][0]"
   )
-  # Do a backup once, but don't overwrite it.
+  # Do a backup once, but don't ever overwrite it.
   if [ ! -f /etc/hosts.bak ]; then
     sudo cp -a /etc/hosts /etc/hosts.bak
   fi
@@ -133,11 +138,13 @@ function change-server-url() {
   fi
 }
 
-function postgres-install() {
-  helm install postgresql charts/postgres
+function install-postgres() {
+  kubectl apply -f namespace.yaml
+  kubectl apply -f manifests/postgres/deployment.yaml
+  kubectl apply -f manifests/postgres/service.yaml
 }
 
-function influx-install() {
+function install-influx() {
   helm repo add influxdata https://helm.influxdata.com
   helm upgrade -i influxdb --version 4.12.0 influxdata/influxdb
 }
@@ -146,11 +153,14 @@ function start() {
   k3d-create
   install-rancher
   configure-hostnames
+
   local api_key
   api_key=$(create-api-key "$(get-login-token)")
   change-server-url "$api_key"
-  # Required to skip the setup screen
-  change-password "$api_key"
+  change-password "$api_key" # Required to skip the setup screen
+
+  install-postgres
+  install-influx
 }
 
 # Only run start if script wasn't sourced.
