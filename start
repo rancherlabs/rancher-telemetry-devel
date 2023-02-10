@@ -5,11 +5,6 @@
 : "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}"
 
 function setup-volume() {
-  if [ ! -d /var/lib/postgresql ]; then
-    if ! mkdir -p /var/lib/postgresql; then
-      sudo mkdir -p /var/lib/postgresql
-    fi
-  fi
   if [ ! -d /var/lib/postgresql/data ]; then
     if ! mkdir -p /var/lib/postgresql/data; then
       sudo mkdir -p /var/lib/postgresql/data
