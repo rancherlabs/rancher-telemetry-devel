@@ -64,6 +64,10 @@ spec:
             value: admin@local.host
           - name: PGADMIN_DEFAULT_PASSWORD
             value: admin
+        volumeMounts:
+          - mountPath: /pgadmin4/servers.json
+            subPath: servers.json
+            name: pgadmin-config
       volumes:
         - name: pgdata
           hostPath:
@@ -71,3 +75,6 @@ spec:
         - name: dump
           hostPath:
             path: /var/lib/postgresql/docker-entrypoint-initdb.d
+        - name: pgadmin-config
+          configMap:
+            name: postgresql

@@ -154,7 +154,8 @@ function change-server-url() {
 }
 
 function install-postgres() {
-  kubectl apply -f namespace.yaml
+  kubectl apply -f manifests/namespace.yaml
+  kubectl apply -f manifests/postgres/config.yaml
   kubectl apply -f manifests/postgres/deployment.yaml
   kubectl apply -f manifests/postgres/service.yaml
 }

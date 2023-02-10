@@ -6,8 +6,6 @@ metadata:
   name: postgresql
   namespace: telemetry
 spec:
-  externalTrafficPolicy: Local
-  internalTrafficPolicy: Local
   ipFamilies:
   - IPv4
   ipFamilyPolicy: SingleStack
