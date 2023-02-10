@@ -2,6 +2,7 @@
 
 : "${HOST_NAME:=rancher}"
 : "${CLUSTER_NAME:=telemetry}"
+: "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}"
 
 function setup-volume() {
   if [ ! -d /var/lib/postgresql ]; then
@@ -25,6 +26,7 @@ function setup-volume() {
 
 function k3d-create() {
   local create_command="k3d cluster create ${CLUSTER_NAME} --agents 1 --servers 1"
+  create_command="$create_command --image ${K3S_VERSION}"
   create_command="$create_command --volume /var/lib/postgresql:/var/lib/postgresql"
   while ! $create_command; do
     k3d cluster delete "${CLUSTER_NAME}"
