@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: telemetry-server
+  name: telemetry-server
+  namespace: telemetry
+spec:
+  selector:
+    matchLabels:
+      name: telemetry-server
+  template:
+    metadata:
+      labels:
+        name: telemetry-server
+    spec:
+      containers:
+        - name: telemetry-server
+          image: rancher/telemetry:v0.6.1
+          resources:
+            limits:
+              memory: '128Mi'
+              cpu: '500m'
+          ports:
+            - name: tele-server
+              protocol: TCP
+              containerPort: 8115
+          envFrom:
+            - configMapRef:
+                name: telemetry-server
+            - secretRef:
+                name: telemetry

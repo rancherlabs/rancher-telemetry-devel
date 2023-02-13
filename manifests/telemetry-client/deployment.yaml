@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-client
+  namespace: telemetry
+spec:
+  selector:
+    matchLabels:
+      app: telemetry-client
+  template:
+    metadata:
+      labels:
+        app: telemetry-client
+    spec:
+      containers:
+        - name: telemetry-client
+          image: rancher/telemetry:v0.6.1
+          resources:
+            limits:
+              memory: '128Mi'
+              cpu: '500m'
+          envFrom:
+            - configMapRef:
+                name: telemetry-client
+          env:
+            - name: CATTLE_TOKEN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: telemetry
+                  key: api-key
+          args:
+            - client

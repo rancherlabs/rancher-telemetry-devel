@@ -5,7 +5,7 @@ metadata:
     name: postgresql
   name: postgresql
 data:
-  servers.json: >
+  servers.json: > # pgadmin configuration
     {
         "Servers": {
             "1": {
