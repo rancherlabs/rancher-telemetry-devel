@@ -22,9 +22,15 @@ environment spins up a local Kubernetes Cluster. It does so using
 ./start
 ```
 
-Then visit https://rancher/.
+Then visit https://rancher/.  The username is `admin`, the password is
+`dev-admin-pw`.
 
-The username is `admin`, the password is `dev-admin-pw`.
+pgAdmin is installed and configured alongside PostgreSQL.  You can reach the web
+interface using https://rancher:8080/.  The username is `admin@local.host` and
+the password is `admin`.
+
+If you want to connect to PostgreSQL using external tools, you can do so using
+rancher:5432 on the host system.
 
 ## What's being deployed?
 
