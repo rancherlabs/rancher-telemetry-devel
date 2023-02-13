@@ -3,6 +3,7 @@
 : "${HOST_NAME:=rancher}"
 : "${CLUSTER_NAME:=telemetry}"
 : "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}"
+# : "${TELEMETRY_IMAGE:=rancher/telemetry:v0.6.1}"
 
 function setup-volume() {
   if [ ! -d /var/lib/postgresql/data ]; then
@@ -67,12 +68,20 @@ function configure-hostnames() {
 
 # Get login token, good for 1 minute.
 function get-login-token() {
+  if [ -z "$1" ]; then
+    echo >&2 "error: argument missing: password"
+    return
+  fi
+
+  local password
   local login_token
+
+  password="$1"
   login_token=$(
     curl -k -s -X POST \
       "https://${HOST_NAME}/v3-public/localProviders/local?action=login" \
       -H 'content-type: application/json' \
-      --data-binary '{"username":"admin","password":"admin"}' |
+      --data-binary "{\"username\":\"admin\",\"password\":\"$password\"}" |
       jq -r .token
   )
 
@@ -104,7 +113,7 @@ function change-password() {
 function create-api-key() {
   local login_token
   if [ -z "$1" ]; then
-    echo >&2 "The first argument must be a login token"
+    echo >&2 "error: argument missing: token"
     return 1
   else
     login_token="$1"
@@ -117,7 +126,7 @@ function create-api-key() {
       "https://${HOST_NAME}/v3/token" \
       -H 'Content-Type: application/json' \
       -H "Authorization: Bearer $login_token" \
-      --data-binary '{"type":"token","description":"for scripts and stuff"}' |
+      --data-binary '{"type":"token", "description": "for scripts and stuff"}' |
       jq -r .token
   )
 
@@ -162,6 +171,28 @@ function install-influx() {
   helm upgrade -n telemetry -i influxdb --version 4.12.0 influxdata/influxdb
 }
 
+function create-configmap {
+  if [ -z "$1" ]; then
+    echo >&2 "error: argument missing: api-key"
+    return 1
+  fi
+
+  local api_key="$1"
+
+  cat <<EOF >configmap.temp.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telemetry
+  namespace: telemetry
+data:
+  api-key: $api_key
+EOF
+
+  kubectl create namespace telemetry || true
+  kubectl apply -f configmap.temp.yaml
+}
+
 function install-base() {
   setup-volume
   k3d-create
@@ -169,9 +200,15 @@ function install-base() {
   configure-hostnames
 
   local api_key
-  api_key=$(create-api-key "$(get-login-token)")
+  api_key=$(create-api-key "$(get-login-token admin)")
   change-server-url "$api_key"
   change-password "$api_key" # Required to skip the setup screen
+
+  create-configmap "$api_key"
+}
+
+function install-telemetry-server() {
+  echo "not implemented"
 }
 
 function start() {
