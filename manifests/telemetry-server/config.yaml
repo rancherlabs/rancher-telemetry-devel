@@ -10,5 +10,3 @@ data:
   # TELEMETRY_PG_PORT: "5432"
   # TELEMETRY_PG_DBNAME: telemetry
   # TELEMETRY_PG_SSL: disable
-  # TELEMETRY_API_KEY: ""
-  # TELEMETRY_SECRET_KEY: ""

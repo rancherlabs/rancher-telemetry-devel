@@ -186,12 +186,14 @@ function install-influx() {
 }
 
 function create-secret {
-  if [ -z "$1" ]; then
-    echo >&2 "error: argument missing: api-key"
+  if [ "$#" -ne 3 ]; then
+    echo >&2 "error: create-secret: argument missing: need 3, have $#"
     return 1
   fi
 
   local api_key="$1"
+  local access_key="$2"
+  local secret_key="$3"
 
   cat <<EOF >secret.yaml
 apiVersion: v1
@@ -200,6 +202,8 @@ metadata:
   name: telemetry
   namespace: telemetry
 stringData:
+  access-key: $access_key
+  secret-key: $secret_key
   api-key: $api_key
 EOF
 
@@ -223,15 +227,26 @@ function install-base() {
 }
 
 function init-base() {
+  # shellcheck disable=SC2120
+  if [ -z "$1" ]; then
+    echo >&2 "error: init-base: missing argument: password"
+  fi
   local api_key
-  api_key=$(create-api-key "$(get-login-token admin)")
+  api_key=$(create-api-key "$(get-login-token $1)")
+
+  IFS=':' read -ra keys <<< "$api_key"
+  local access_key="${keys[0]}"
+  local secret_key="${keys[1]}"
+
   change-server-url "$api_key"
   change-password "$api_key" # Required to skip the setup screen
-  create-secret "$api_key"
+
+  create-secret "$api_key" "${access_key}" "${secret_key}"
 }
 
 function start() {
   install-base
+  init-base "admin"
   install-postgres
   install-influx
 }

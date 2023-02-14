@@ -6,9 +6,6 @@ metadata:
 data:
   CATTLE_URL: https://rancher.cattle-system/v3
   TELEMETRY_TO_URL: "http://telemetry-server:8115/publish"
-  # CATTLE_ACCESS_KEY: ""
-  # CATTLE_SECRET_KEY: ""
-  # CATTLE_TOKEN_KEY: ""
   # CATTLE_CERTIFICATE: ""
   # TELEMETRY_INTERVAL: ""
 
