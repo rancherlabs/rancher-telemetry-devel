@@ -17,7 +17,7 @@ spec:
       containers:
       - image: postgres
         name: postgres
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         livenessProbe:  # restarts containers (kill)
           failureThreshold: 3
           periodSeconds: 30
