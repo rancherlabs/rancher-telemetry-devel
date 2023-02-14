@@ -160,18 +160,27 @@ function change-server-url() {
 }
 
 function install-postgres() {
-  kubectl apply -f manifests/namespace.yaml
-  kubectl apply -f manifests/postgres/config.yaml
-  kubectl apply -f manifests/postgres/deployment.yaml
-  kubectl apply -f manifests/postgres/service.yaml
+  files=(
+    manifests/namespace.yaml
+    manifests/postgres/config.yaml
+    manifests/postgres/deployment.yaml
+    manifests/postgres/service.yaml
+  )
+  for f in "${files[@]}"; do
+    if ! kubectl apply --wait -f "$f"; then
+      echo >&2 "error: install-postgres: kubectl apply failed"
+      return 1
+    fi
+  done
 }
 
 function install-influx() {
+  kubectl apply -f manifests/namespace.yaml
   helm repo add influxdata https://helm.influxdata.com
   helm upgrade -n telemetry -i influxdb --version 4.12.0 influxdata/influxdb
 }
 
-function create-configmap {
+function create-secret {
   if [ -z "$1" ]; then
     echo >&2 "error: argument missing: api-key"
     return 1
@@ -179,18 +188,26 @@ function create-configmap {
 
   local api_key="$1"
 
-  cat <<EOF >configmap.temp.yaml
+  cat <<EOF >secret.yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: telemetry
   namespace: telemetry
-data:
+stringData:
   api-key: $api_key
 EOF
 
   kubectl create namespace telemetry || true
-  kubectl apply -f configmap.temp.yaml
+  kubectl apply -f secret.yaml
+}
+
+function install-telemetry-server() {
+  kubectl -n telemetry install manifests/telemetry-server
+}
+
+function install-telemetry-client() {
+  kubectl -n telemetry install manifests/telemetry-client
 }
 
 function install-base() {
@@ -198,17 +215,14 @@ function install-base() {
   k3d-create
   install-rancher
   configure-hostnames
+}
 
+function init-base() {
   local api_key
   api_key=$(create-api-key "$(get-login-token admin)")
   change-server-url "$api_key"
   change-password "$api_key" # Required to skip the setup screen
-
-  create-configmap "$api_key"
-}
-
-function install-telemetry-server() {
-  echo "not implemented"
+  create-secret "$api_key"
 }
 
 function start() {
