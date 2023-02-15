@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ./../origin
+
+images:
+- name: rancher/telemetry
+  newTag: dev-amd64
+
+configMapGenerator:
+- name: telemetry-client
+  behavior: merge
+  literals:
+  - DEBUG=true
+  - TELEMETRY_INTERVAL=1m
+
