@@ -18,9 +18,12 @@ spec:
         - name: telemetry-server
           image: rancher/telemetry:v0.6.1
           resources:
+            requests:
+              memory: '2Gi'
+              cpu: '2000m'
             limits:
-              memory: '128Mi'
-              cpu: '500m'
+              memory: '4Gi'
+              cpu: '4000m'
           ports:
             - name: tele-server
               protocol: TCP
