@@ -42,5 +42,7 @@ spec:
                 secretKeyRef:
                   name: telemetry
                   key: secret-key
+            - name: TELEMETRY_DEBUG
+              value: "true"
           args:
             - server
