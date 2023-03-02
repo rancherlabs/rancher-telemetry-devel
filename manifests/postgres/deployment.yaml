@@ -55,6 +55,9 @@ spec:
           - name: dump
             mountPath: /docker-entrypoint-initdb.d
             readOnly: true
+          - name: dshm
+            mountPath: /dev/shm
+
       - image: dpage/pgadmin4
         name: pgadmin
         imagePullPolicy: IfNotPresent
@@ -68,6 +71,7 @@ spec:
           - mountPath: /pgadmin4/servers.json
             subPath: servers.json
             name: pgadmin-config
+
       volumes:
         - name: pgdata
           hostPath:
@@ -78,3 +82,6 @@ spec:
         - name: pgadmin-config
           configMap:
             name: postgresql
+        - name: dshm
+          emptyDir:
+            medium: Memory
