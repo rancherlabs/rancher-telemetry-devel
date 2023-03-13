@@ -78,7 +78,7 @@ api_token=$(create-api-key $(get-login-token))
 > **_NOTE_**: If you don't run `change-password`, the bootstrap password will
 > still be `admin` and you will be shown the setup-screen.
 
-## I want data to be imported!
+## Can I automate importing data?
 
 PostgreSQL data is persisted on the host system in `/var/lib/postgresql/data`.
 The script `start` ensures it is created and available. It also makes it
