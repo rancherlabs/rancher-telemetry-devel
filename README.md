@@ -89,3 +89,13 @@ SQL instructions can be placed as files in
 `/var/lib/postgresql/docker-entrypoint-initdb.d`. They will be executed on first
 start of the PostgreSQL container. If the database has been initialized once,
 the SQL files in that folder will be ignored.
+
+## Can I import container images from my host system?
+
+Yes, k3d allows to import container images from the host using the following
+command. Note that the container images are copied into clusters, which means
+they will be available on all nodes of said cluster.
+
+```console
+k3d image import -c <cluster-name> <image-path:tag>
+```
