@@ -21,3 +21,23 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 3000
+
+        volumeMounts:
+          - mountPath: /etc/dashboards
+            name: grafana-dashboards-vol
+          - mountPath: /etc/grafana/provisioning/dashboards
+            name: grafana-dashboards-config-vol
+          - mountPath: /etc/grafana/provisioning/datasources
+            name: grafana-datasources-vol
+
+      volumes:
+        - name: grafana-dashboards-vol
+          configMap:
+            name: grafana-dashboards
+        - name: grafana-dashboards-config-vol
+          configMap:
+            name: grafana-dashboards-config
+        - name: grafana-datasources-vol
+          configMap:
+            name: grafana-datasources
+            
