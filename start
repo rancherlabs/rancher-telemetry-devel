@@ -212,11 +212,17 @@ EOF
 }
 
 function install-telemetry-server() {
-  kubectl -n telemetry install manifests/telemetry-server
+  kubectl \
+    -n telemetry \
+    apply \
+    -f ./manifests/telemetry-server/
 }
 
 function install-telemetry-client() {
-  kubectl -n telemetry install manifests/telemetry-client
+  kubectl \
+    -n telemetry \
+    apply \
+    -k ./manifests/telemetry-client/origin/
 }
 
 function install-base() {
