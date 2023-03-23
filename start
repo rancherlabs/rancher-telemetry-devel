@@ -5,6 +5,8 @@
 : "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}"
 # : "${TELEMETRY_IMAGE:=rancher/telemetry:v0.6.1}"
 
+CLUSTER_IP=""
+
 function setup-volume() {
   if [ ! -d /var/lib/postgresql/data ]; then
     if ! mkdir -p /var/lib/postgresql/data; then
@@ -49,28 +51,52 @@ function install-rancher() {
     --set hostname="${HOST_NAME}" \
     --set replicas=1 \
     --atomic
+
+    CLUSTER_IP=$(get-cluster-ip)
+}
+
+function get-cluster-ip() {
+  for i in {0..5}; do
+    >&2 echo "retrieving IP of cluster (attempt #$((i+1)))"
+    ip=$(
+      kubectl get -A ingress -o json |
+        jq -r '.items[0].status.loadBalancer.ingress[0].ip'
+    )
+
+    if [[ -z "${ip}" || "${ip}" = "null" ]]; then
+      >&2 echo "error: IP couldn't be determined using Ingress status"
+      return 1
+    fi
+
+    if http --quiet --check-status --verify=no GET "https://${ip}" "Host:${HOST_NAME}" ; then
+      echo "${ip}"
+      return 0
+    fi
+  done
+
+  >&2 echo "error: retrieval of cluster IP failed"
+  return 1
 }
 
 function configure-hostnames() {
-  # Get the IP address of one of the nodes.
-  local addr
-  addr=$(
-    k3d node list -o json |
-      jq -r "[ .[] | select(.name | contains(\"telemetry\")) | .IP.IP ][0]"
-  )
+  if [ -z "${CLUSTER_IP}" ]; then
+    >&2 echo "error: cannot configure hostnames: CLUSTER_IP is empty"
+    return 1
+  fi
   # Do a backup once, but don't ever overwrite it.
   if [ ! -f /etc/hosts.bak ]; then
     sudo cp -a /etc/hosts /etc/hosts.bak
   fi
+
   sudo sed -n -e "/ ${HOST_NAME}/!p" -i /etc/hosts
-  echo "${addr} ${HOST_NAME}" | sudo tee -a /etc/hosts >/dev/null
+  echo "${CLUSTER_IP} ${HOST_NAME}" | sudo tee -a /etc/hosts >/dev/null
 }
 
 # Get login token, good for 1 minute.
 function get-login-token() {
   if [ -z "$1" ]; then
     echo >&2 "error: argument missing: password"
-    return
+    return 1
   fi
 
   local password
@@ -79,14 +105,15 @@ function get-login-token() {
   password="$1"
   login_token=$(
     curl -k -s -X POST \
-      "https://${HOST_NAME}/v3-public/localProviders/local?action=login" \
-      -H 'content-type: application/json' \
-      --data-binary "{\"username\":\"admin\",\"password\":\"$password\"}" |
-      jq -r .token
+      "https://${CLUSTER_IP}/v3-public/localProviders/local?action=login" \
+        -H 'Content-Type: application/json' \
+        -H "Host: ${HOST_NAME}" \
+        --data-binary "{\"username\":\"admin\",\"password\":\"$password\"}" |
+          jq -r .token
   )
 
-  if [ "$?" -ne 0 ]; then
-    echo >&2 "Login token could not be acquired"
+  if [[ "$?" -ne "0" || -z "${login_token}" ]]; then
+    echo >&2 "error: login token could not be acquired"
     return 1
   fi
 
@@ -103,9 +130,10 @@ function change-password() {
 
   # Change password
   curl -k -s -X POST \
-    "https://${HOST_NAME}/v3/users?action=changepassword" \
+    "https://${CLUSTER_IP}/v3/users?action=changepassword" \
     -H 'Content-Type: application/json' \
     -H "Authorization: Bearer $token" \
+    -H "Host: ${HOST_NAME}" \
     --data-binary '{"currentPassword":"admin","newPassword":"dev-admin-pw"}'
 }
 
@@ -123,9 +151,10 @@ function create-api-key() {
   api_key=$(
     curl -k -s \
       -X POST \
-      "https://${HOST_NAME}/v3/token" \
+      "https://${CLUSTER_IP}/v3/token" \
       -H 'Content-Type: application/json' \
       -H "Authorization: Bearer $login_token" \
+      -H "Host: ${HOST_NAME}" \
       --data-binary '{"type":"token", "description": "for scripts and stuff"}' |
       jq -r .token
   )
@@ -148,11 +177,12 @@ function change-server-url() {
     api_key="$1"
   fi
   curl -k -s \
-    "https://${HOST_NAME}/v3/settings/server-url" \
+    "https://${CLUSTER_IP}/v3/settings/server-url" \
     -H 'Content-Type: application/json' \
     -H "Authorization: Bearer $api_key" \
+    -H "Host: ${HOST_NAME}" \
     -X PUT \
-    --data-binary "{\"name\":\"server-url\",\"value\":\"https://${HOST_NAME}/\"}"
+    --data-binary "{\"name\":\"server-url\",\"value\":\"https://${CLUSTER_IP}/\"}"
 
   if [ "$?" -ne "0" ]; then
     echo >&2 "Changing server URL failed"
@@ -235,10 +265,23 @@ function install-base() {
 function init-base() {
   # shellcheck disable=SC2120
   if [ -z "$1" ]; then
-    echo >&2 "error: init-base: missing argument: password"
+    >&2 echo "error: init-base: missing argument: password"
+    return 1
   fi
+
+  local login_token
+  login_token=$(get-login-token "$1")
+  if [ "${login_token}" = "" ] ; then
+    >&2 echo "error: login token couldn't be acquired"
+    return 1
+  fi
+
   local api_key
-  api_key=$(create-api-key "$(get-login-token $1)")
+  api_key=$(create-api-key "${login_token}")
+  if [ -z "${api_key}" ]; then
+    >&2 echo "error: API key couldn't be created"
+    return 1
+  fi
 
   IFS=':' read -ra keys <<< "$api_key"
   local access_key="${keys[0]}"
@@ -259,5 +302,7 @@ function start() {
 
 # Only run start if script wasn't sourced.
 if ! (return 0 2>/dev/null); then
+  set -ex
   start
+  set +ex
 fi
