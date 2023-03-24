@@ -103,21 +103,27 @@ function get-login-token() {
   local login_token
 
   password="$1"
-  login_token=$(
-    curl -k -s -X POST \
-      "https://${CLUSTER_IP}/v3-public/localProviders/local?action=login" \
-        -H 'Content-Type: application/json' \
-        -H "Host: ${HOST_NAME}" \
-        --data-binary "{\"username\":\"admin\",\"password\":\"$password\"}" |
-          jq -r .token
-  )
 
-  if [[ "$?" -ne "0" || -z "${login_token}" ]]; then
-    echo >&2 "error: login token could not be acquired"
-    return 1
-  fi
+  for i in {1..10}; do
+    login_token=$(
+      curl -k -s -X POST \
+        "https://${CLUSTER_IP}/v3-public/localProviders/local?action=login" \
+          -H 'Content-Type: application/json' \
+          -H "Host: ${HOST_NAME}" \
+          --data-binary "{\"username\":\"admin\",\"password\":\"$password\"}" |
+            jq -r .token
+    )
 
-  echo "${login_token}"
+    if [[ "$?" -eq "0" && -n "${login_token}" && "${login_token}" != "null" ]]; then
+      echo "${login_token}"
+      return 0
+    fi
+
+    sleep 1
+  done
+
+  echo >&2 "error: login token could not be acquired"
+  return 1
 }
 
 function change-password() {
