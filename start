@@ -52,7 +52,7 @@ function install-rancher() {
     --set replicas=1 \
     --atomic
 
-    CLUSTER_IP=$(get-cluster-ip)
+  CLUSTER_IP=$(get-cluster-ip)
 }
 
 function get-cluster-ip() {
