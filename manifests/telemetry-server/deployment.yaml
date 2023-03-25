@@ -17,6 +17,22 @@ spec:
       containers:
         - name: telemetry-server
           image: rancher/telemetry:v0.6.1
+          livenessProbe:
+            failureThreshold: 3
+            periodSeconds: 30
+            successThreshold: 1
+            httpGet:
+              port: tele-server
+              path: healthcheck.html
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            periodSeconds: 30
+            successThreshold: 1
+            httpGet:
+              port: tele-server
+              path: healthcheck.html
+            timeoutSeconds: 1
           resources:
             requests:
               memory: '2Gi'
