@@ -268,7 +268,7 @@ function install-telemetry-server-dev() {
   kubectl \
     -n telemetry \
     apply \
-    -f ./manifests/telemetry-server/dev
+    -k ./manifests/telemetry-server/dev
 }
 
 function install-telemetry-client() {
