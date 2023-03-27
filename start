@@ -254,11 +254,25 @@ function install-telemetry-server() {
     -f ./manifests/telemetry-server/
 }
 
+function install-telemetry-server-dev() {
+  kubectl \
+    -n telemetry \
+    apply \
+    -f ./manifests/telemetry-server/dev
+}
+
 function install-telemetry-client() {
   kubectl \
     -n telemetry \
     apply \
-    -k ./manifests/telemetry-client/origin/
+    -k ./manifests/telemetry-client/origin
+}
+
+function install-telemetry-client-dev() {
+  kubectl \
+    -n telemetry \
+    apply \
+    -k ./manifests/telemetry-client/dev
 }
 
 function install-base() {
