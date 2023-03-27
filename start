@@ -1,12 +1,19 @@
 #!/bin/bash
 
-: "${HOST_NAME:=rancher}"
-: "${CLUSTER_NAME:=telemetry}"
-: "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}"
-# : "${TELEMETRY_IMAGE:=rancher/telemetry:v0.6.1}"
+: "${HOST_NAME:=rancher}"  # The host name to reach Rancher Manager from host.
+: "${CLUSTER_NAME:=telemetry}"  # A cluster name.
+: "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}" # K3s version to use.
 
+# The cluster IP is determined if the k3d cluster has been created and is any
+# node that forwards HTTP ports to the nodes on the cluster. It can hence be
+# used to send HTTP requests to an service, provide the host header is set
+# correctly.
 CLUSTER_IP=""
 
+# Set up the directory structure for mounting /var/lib/postgresql/data from the
+# host into k3d. This is necessary to import data from the host on clsuter
+# create, and prevents that working data needs to be re-imported on each cluster
+# creation. This is just one part of the functionatlity that handles that.
 function setup-volume() {
   if [ ! -d /var/lib/postgresql/data ]; then
     if ! mkdir -p /var/lib/postgresql/data; then
@@ -22,6 +29,9 @@ function setup-volume() {
     /var/lib/postgresql/docker-entrypoint-initdb.d/000-init.sql
 }
 
+# Creates a K3d cluster with the predefined or overridden CLUSTER_NAME.
+# CLUSTER_NAME needs to be different if several instances of k3d clusters should
+# be run simultaneously.
 function k3d-create() {
   local create_command="k3d cluster create ${CLUSTER_NAME} --agents 1 --servers 1"
   create_command="$create_command --image ${K3S_VERSION}"
