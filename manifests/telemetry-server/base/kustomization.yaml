@@ -1,0 +1,14 @@
+kind: Kustomization
+
+namespace: telemetry
+
+resources:
+  - ./deployment.yaml
+  - ./service.yaml
+
+configMapGenerator:
+  - name: telemetry-server
+    literals:
+      - "TELEMETRY_PG_USER=admin"
+      - "TELEMETRY_PG_PASS=admin"
+      - "TELEMETRY_PG_HOST=postgresql"

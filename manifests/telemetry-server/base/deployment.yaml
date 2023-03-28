@@ -4,7 +4,6 @@ metadata:
   labels:
     name: telemetry-server
   name: telemetry-server
-  namespace: telemetry
 spec:
   selector:
     matchLabels:

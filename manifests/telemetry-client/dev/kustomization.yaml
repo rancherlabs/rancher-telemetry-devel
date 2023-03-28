@@ -1,8 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: telemetry
+
+generatorOptions:
+  disableNameSuffixHash: true
 
 resources:
-- ./../origin
+- ../base
 
 images:
 - name: rancher/telemetry
