@@ -10,7 +10,7 @@ resources:
 
 images:
 - name: rancher/telemetry
-  newTag: dev-amd64
+  newTag: dev
 
 configMapGenerator:
 - name: telemetry-client
