@@ -63,6 +63,8 @@ spec:
         name: pgadmin
         imagePullPolicy: IfNotPresent
         resources: {}
+        ports:
+          - containerPort: 80
         env:
           - name: PGADMIN_DEFAULT_EMAIL
             value: admin@local.host
