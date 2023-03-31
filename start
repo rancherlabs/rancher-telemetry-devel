@@ -228,7 +228,7 @@ function install-influx() {
 
 function install-telemetry-stats() {
   kubectl apply -f manifests/namespace.yaml
-  kubectl apply --server-side -f ./manifests/telemetry-stats/deployment.yaml
+  kubectl apply --server-side -k ./manifests/telemetry-stats/base
 }
 
 function install-telemetry-stats-dev() {
@@ -266,7 +266,7 @@ function install-telemetry-server() {
   kubectl \
     -n telemetry \
     apply \
-    -f ./manifests/telemetry-server/
+    -k ./manifests/telemetry-server/base
 }
 
 function install-telemetry-server-dev() {
@@ -280,7 +280,7 @@ function install-telemetry-client() {
   kubectl \
     -n telemetry \
     apply \
-    -k ./manifests/telemetry-client/origin
+    -k ./manifests/telemetry-client/base
 }
 
 function install-telemetry-client-dev() {
