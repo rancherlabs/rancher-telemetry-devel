@@ -17,18 +17,18 @@ spec:
         image: rancherlabs/rancher-telemetry-stats:v0.0.1
         env:
           - name: TELEMETRY_DEBUG
-            value: "yes"
+            value: "true"
           - name: TELEMETRY_URL
             value: http://telemetry-server:8115
           - name: TELEMETRY_ACCESS_KEY
             valueFrom:
               secretKeyRef:
-                key: access-key
+                key: access_key
                 name: telemetry
           - name: TELEMETRY_SECRET_KEY
             valueFrom:
               secretKeyRef:
-                key: secret-key
+                key: secret_key
                 name: telemetry
         resources:
           limits:
@@ -42,8 +42,13 @@ spec:
         command:
           - "/bin/rancher-telemetry-stats"
         args:
+          - --debug
           - --insecure
           - --influxurl=http://influxdb:8086
+          - --influxdb=telemetry
+          - --influxuser=admin
+          - --influxpass=admin
+          - --refresh=30
           # - --influxuser=admin
           # - --influxpass=admin
           # - --limit
