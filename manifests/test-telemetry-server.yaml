@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-telemetry-server
+  namespace: telemetry
+spec:
+  # ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+        - name: test-container
+          image: alpine
+          command:
+            - sh
+            - -c
+            - |
+              set -ex && apk update && apk add curl && \
+                curl \
+                -u "$access_key:$secret_key" \
+                http://telemetry-server:8115/admin/active?hours=48
+          envFrom:
+            - secretRef:
+                name: telemetry
+      restartPolicy: OnFailure
