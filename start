@@ -205,9 +205,14 @@ function change-server-url() {
   fi
 }
 
-function install-postgres() {
+function install-postgres-13.2() {
   kubectl apply -f manifests/namespace.yaml
-  kubectl apply -k manifests/postgres/
+  kubectl apply -k manifests/postgres/13.2
+}
+
+function install-postgres-15.2() {
+  kubectl apply -f manifests/namespace.yaml
+  kubectl apply -k manifests/postgres/15.2
 }
 
 function install-influx() {
@@ -326,7 +331,7 @@ function init-base() {
 function start() {
   install-base
   init-base "admin"
-  install-postgres
+  install-postgres-15.2
   install-influx
 }
 
