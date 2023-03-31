@@ -9,15 +9,18 @@ spec:
     spec:
       containers:
         - name: test-container
-          image: alpine
+          image: alpine:3
           command:
             - sh
             - -c
             - |
-              set -ex && apk update && apk add curl && \
+              set -ex && apk update && \
+                apk add curl jq httpie && \
                 curl \
-                -u "$access_key:$secret_key" \
-                http://telemetry-server:8115/admin/active?hours=48
+                  -u "$access_key:$secret_key" \
+                  http://telemetry-server:8115/admin/active?hours=48 && \
+                  tail -f /dev/null
+
           envFrom:
             - secretRef:
                 name: telemetry
