@@ -228,7 +228,7 @@ function install-influx() {
 
 function install-telemetry-stats() {
   kubectl apply -f manifests/namespace.yaml
-  kubectl apply --servers-side -f ./manifests/telemetry-stats/deployment.yaml
+  kubectl apply --server-side -f ./manifests/telemetry-stats/deployment.yaml
 }
 
 function install-telemetry-stats-dev() {
