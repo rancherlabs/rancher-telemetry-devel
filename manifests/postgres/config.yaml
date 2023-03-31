@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgresql
+  name: pgadmin
   namespace: telemetry
 data:
+
   servers.json: > # pgadmin configuration
     {
         "Servers": {
