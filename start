@@ -6,7 +6,7 @@
 
 # The cluster IP is determined if the k3d cluster has been created and is any
 # node that forwards HTTP ports to the nodes on the cluster. It can hence be
-# used to send HTTP requests to an service, provide the host header is set
+# used to send HTTP requests to a service, provided the host header is set
 # correctly.
 CLUSTER_IP=""
 
