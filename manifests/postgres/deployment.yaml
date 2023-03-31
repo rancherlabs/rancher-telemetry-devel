@@ -15,7 +15,7 @@ spec:
         name: postgresql
     spec:
       containers:
-      - image: postgres
+      - image: postgres:13.2
         name: postgres
         imagePullPolicy: IfNotPresent
         livenessProbe:  # restarts containers (kill)
@@ -48,7 +48,13 @@ spec:
         - containerPort: 5432
           name: pgsql
           protocol: TCP
-        resources: { }
+        resources:
+          requests:
+            memory: 1G
+            cpu: 1
+          limits:
+            memory: 16G
+            cpu: 8
         volumeMounts:
           - name: pgdata
             mountPath: /var/lib/postgresql/data
@@ -60,11 +66,18 @@ spec:
             mountPath: /dev/shm
 
       - image: dpage/pgadmin4
-        name: pgadmin
+        name: pgadmin:6
         imagePullPolicy: IfNotPresent
-        resources: {}
+        resources:
+          requests:
+            memory: 128M
+            cpu: 500m
+          limits:
+            memory: 1G
+            cpu: 1
         ports:
           - containerPort: 80
+            name: pgadmin-ui
         env:
           - name: PGADMIN_DEFAULT_EMAIL
             value: admin@local.host
