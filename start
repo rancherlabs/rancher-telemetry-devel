@@ -220,6 +220,14 @@ function install-influx() {
     influxdata/influxdb
 }
 
+function install-telemetry-stats() {
+  kubectl apply --servers-side -f ./manifests/telemetry-stats/deployment.yaml
+}
+
+function install-telemetry-stats-dev() {
+  kubectl apply --server-side -k ./manifests/telemetry-stats/dev/
+}
+
 function create-secret {
   if [ "$#" -ne 3 ]; then
     echo >&2 "error: create-secret: argument missing: need 3, have $#"
@@ -237,9 +245,9 @@ metadata:
   name: telemetry
   namespace: telemetry
 stringData:
-  access-key: $access_key
-  secret-key: $secret_key
-  api-key: $api_key
+  access_key: $access_key
+  secret_key: $secret_key
+  api_key: $api_key
 EOF
 
   kubectl create namespace telemetry || true

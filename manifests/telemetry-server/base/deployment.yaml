@@ -51,12 +51,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: telemetry
-                  key: access-key
+                  key: access_key
             - name: TELEMETRY_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: telemetry
-                  key: secret-key
+                  key: secret_key
             - name: TELEMETRY_DEBUG
               value: "true"
           args:
