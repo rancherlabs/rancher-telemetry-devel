@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    name: telemetry-client
   name: telemetry-client
   namespace: telemetry
 spec:
