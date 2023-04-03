@@ -6,16 +6,17 @@ generatorOptions:
   disableNameSuffixHash: true
 
 resources:
-- ../base
+  - ../base
 
-images:
-- name: rancher/telemetry
-  newTag: dev
+patches:
+  - path: deployment.yaml
+    target:
+      kind: Deployment
+      name: telemetry-client
 
 configMapGenerator:
-- name: telemetry-client
-  behavior: merge
-  literals:
-  - DEBUG=true
-  - TELEMETRY_INTERVAL=1m
-
+  - name: telemetry-client
+    behavior: merge
+    literals:
+      - DEBUG=true
+      - TELEMETRY_INTERVAL=1m
