@@ -14,13 +14,13 @@ spec:
             - sh
             - -c
             - |
-              set -ex && apk update && \
-                apk add curl jq httpie && \
-                curl \
-                  -u "$access_key:$secret_key" \
-                  http://telemetry-server:8115/admin/active?hours=48 && \
-                  tail -f /dev/null
+              set -ex && apk update && apk add curl jq httpie
 
+              test $(curl -fsSL \
+                -u "$access_key:$secret_key" \
+                http://telemetry-server:8115/admin/active?hours=48 | \
+                   jq '.data[0].record.cluster.active') -eq 1 ||
+                     >&2 echo "error: no active cluster"
           envFrom:
             - secretRef:
                 name: telemetry
