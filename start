@@ -1,10 +1,13 @@
 #!/bin/bash
 
-: "${HOST_NAME:=rancher}"  # The host name to reach Rancher Manager from host.
-: "${CLUSTER_NAME:=telemetry-dev}"  # A cluster name.
-: "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}" # K3s version to use.
+# The host name to set Rancher Manager to listen for from the host.
+: "${HOST_NAME:=rancher}"
+# A k3d cluster name to use. Different names prevent collisions.
+: "${CLUSTER_NAME:=telemetry-dev}"
+# K3s version to use.
+: "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}" 
 
-# The cluster IP is determined if the k3d cluster has been created and is any
+# The cluster IP is determined when the k3d cluster has been created and is any
 # node that forwards HTTP ports to the nodes on the cluster. It can hence be
 # used to send HTTP requests to a service, provided the host header is set
 # correctly.
@@ -90,11 +93,23 @@ function get-cluster-ip() {
   return 1
 }
 
+# Rancher needs a host name, so we add the IP address of a cluster
+# node 
 function configure-hostnames() {
+  if [ -n "${NO_HOST_CONFIG}" ]; then
+    echo "skipping hostname configuration"
+    return 0
+  fi
+
   if [ -z "${CLUSTER_IP}" ]; then
     >&2 echo "error: cannot configure hostnames: CLUSTER_IP is empty"
     return 1
   fi
+  if [ -z "${HOST_NAME}" ]; then
+    >&2 echo "error: no HOST_NAME found"
+    return 1
+  fi
+
   # Do a backup once, but don't ever overwrite it.
   if [ ! -f /etc/hosts.bak ]; then
     sudo cp -a /etc/hosts /etc/hosts.bak
@@ -173,8 +188,8 @@ function create-api-key() {
       -H 'Content-Type: application/json' \
       -H "Authorization: Bearer $login_token" \
       -H "Host: ${HOST_NAME}" \
-      --data-binary '{"type":"token", "description": "for scripts and stuff"}' |
-      jq -r .token
+      --data-binary '{"type": "token", "description": "for scripts"}' |
+        jq -r .token
   )
 
   if [ "$?" -ne 0 ]; then
@@ -330,6 +345,7 @@ function init-base() {
   create-secret "$api_key" "${access_key}" "${secret_key}"
 }
 
+# To be called on a developers' machine.
 function start() {
   install-base
   init-base "admin"
