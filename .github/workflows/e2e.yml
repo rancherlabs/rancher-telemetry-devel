@@ -21,4 +21,10 @@ jobs:
         run: pip install httpie
 
       - name: Run it
-        run: ./start
+        run: SKIP_ETC_HOSTS=yes ./start
+
+      - name: Test report retrieval from PostgreSQL through Telemetry Server
+        run: |
+          kubectl -n telemetry apply --wait -f manifests/test-telemetry-server.yaml
+          kubectl -n telemetry wait --for=condition=complete --timeout=30s job/test-telemetry-server
+

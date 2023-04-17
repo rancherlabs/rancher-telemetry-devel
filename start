@@ -96,7 +96,7 @@ function get-cluster-ip() {
 # Rancher needs a host name, so we add the IP address of a cluster
 # node 
 function configure-hostnames() {
-  if [ -n "${NO_HOST_CONFIG}" ]; then
+  if [ -n "${NO_ETC_HOST}" ]; then
     echo "skipping hostname configuration"
     return 0
   fi
