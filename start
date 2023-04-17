@@ -351,6 +351,9 @@ function start() {
   init-base "admin"
   install-postgres-15.2
   install-influx
+  install-telemetry-client
+  install-telemetry-server
+  install-telemetry-stats
 }
 
 # Only run start if script wasn't sourced.
