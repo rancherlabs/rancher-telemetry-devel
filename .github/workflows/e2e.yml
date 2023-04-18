@@ -25,6 +25,32 @@ jobs:
 
       - name: Test report retrieval from PostgreSQL through Telemetry Server
         run: |
-          kubectl -n telemetry apply --wait -k manifests/tests
-          kubectl -n telemetry wait --for=condition=complete --timeout=300s job/test-telemetry-server
+          set -x
+
+          ns="${ns:-telemetry}"
+
+          kubectl -n "${ns}" apply --wait -k manifests/tests
+          if ! kubectl -n telemetry wait \
+            --for=condition=complete \
+            --timeout=900s \
+            job/test-telemetry-server; then
+
+            for deployment in $(kubectl -n ${ns} get deployments -o name); do
+              echo "==> ${deployment} <=="
+              kubectl -n "${ns}" describe $deployment
+              kubectl -n "${ns}" logs $deployment
+            done
+
+            for service in $(kubectl -n ${ns} get services -o name); do
+              kubectl -n "${ns}" describe $service
+            done
+
+            for pod in $(kubectl -n ${ns} get pods -o name); do
+              echo "==> ${pod} <=="
+              kubectl -n "${ns}" describe $pod
+              kubectl -n "${ns}" logs $pod
+            done
+
+            exit 1
+          fi
 
