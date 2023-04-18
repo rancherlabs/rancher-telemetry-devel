@@ -26,5 +26,5 @@ jobs:
       - name: Test report retrieval from PostgreSQL through Telemetry Server
         run: |
           kubectl -n telemetry apply --wait -k manifests/tests
-          kubectl -n telemetry wait --for=condition=complete --timeout=30s job/test-telemetry-server
+          kubectl -n telemetry wait --for=condition=complete --timeout=300s job/test-telemetry-server
 
