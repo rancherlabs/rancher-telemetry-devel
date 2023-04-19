@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <namespace>"
+  exit 1
+fi
+
+NAMESPACE="$1"
+DATE=$(date '+%Y-%m-%d_%H-%M-%S')
+DEBUG_DIRECTORY="k8s-debug-${NAMESPACE}-${DATE}"
+OUTPUT_FORMAT="${K8S_DEBUG_OUTPUT_FORMAT:-yaml}"
+
+mkdir -p "${DEBUG_DIRECTORY}"
+
+echo "Retrieving information about Kubernetes resources in namespace '${NAMESPACE}'..."
+declare -a resources=("pods" "services" "deployments" "replicasets" "configmaps" "secrets")
+for resource in "${resources[@]}"; do
+  kubectl get "${resource}" \
+    --namespace="${NAMESPACE}" \
+    -o "${OUTPUT_FORMAT}" > \
+      "${DEBUG_DIRECTORY}/${resource}.${OUTPUT_FORMAT}"
+done
+
+echo "Collecting logs from all pods in namespace '${NAMESPACE}'..."
+PODS=$(kubectl get pods --namespace="${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}')
+for POD in ${PODS}; do
+  LOG_DIR="${DEBUG_DIRECTORY}/logs/${POD}"
+  mkdir -p "${LOG_DIR}"
+  CONTAINERS=$(kubectl get pods "${POD}" --namespace="${NAMESPACE}" -o jsonpath='{.spec.containers[*].name}')
+  for CONTAINER in ${CONTAINERS}; do
+    kubectl logs --namespace="${NAMESPACE}" "${POD}" -c "${CONTAINER}" > "${LOG_DIR}/${CONTAINER}.log"
+  done
+done
+
+echo "All information collected and saved to '${DEBUG_DIRECTORY}'."

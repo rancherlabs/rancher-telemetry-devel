@@ -26,31 +26,23 @@ jobs:
       - name: Test report retrieval from PostgreSQL through Telemetry Server
         run: |
           set -x
-
           ns="${ns:-telemetry}"
-
           kubectl -n "${ns}" apply --wait -k manifests/tests
-          if ! kubectl -n telemetry wait \
+          kubectl -n telemetry wait \
             --for=condition=complete \
             --timeout=900s \
-            job/test-telemetry-server; then
+            job/test-telemetry-server
 
-            for deployment in $(kubectl -n ${ns} get deployments -o name); do
-              echo "==> ${deployment} <=="
-              kubectl -n "${ns}" describe $deployment
-              kubectl -n "${ns}" logs $deployment
-            done
+      - name: Collect logs
+        if: failure()
+        run: |
+          bash kubectl-dump telemetry
 
-            for service in $(kubectl -n ${ns} get services -o name); do
-              kubectl -n "${ns}" describe $service
-            done
-
-            for pod in $(kubectl -n ${ns} get pods -o name); do
-              echo "==> ${pod} <=="
-              kubectl -n "${ns}" describe $pod
-              kubectl -n "${ns}" logs $pod
-            done
-
-            exit 1
-          fi
-
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: gha-telemetry-dev-e2e-logs-${{ github.sha }}-${{ matrix.k3s_version }}-${{ github.run_id }}
+          path: |
+            k8s-debug-*
+          retention-days: 2
