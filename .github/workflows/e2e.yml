@@ -44,5 +44,5 @@ jobs:
         with:
           name: gha-telemetry-dev-e2e-logs-${{ github.sha }}-${{ matrix.k3s_version }}-${{ github.run_id }}
           path: |
-            k8s-debug-*
+            k8s-dump-*
           retention-days: 2
