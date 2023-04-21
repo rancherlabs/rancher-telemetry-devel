@@ -7,33 +7,66 @@ fi
 
 NAMESPACE="$1"
 DATE=$(date '+%Y-%m-%d_%H-%M-%S')
-DEBUG_DIRECTORY="k8s-dump-${NAMESPACE}-${DATE}"
+DUMP_DIR="kubectl-dump-${NAMESPACE}-${DATE}"
 OUTPUT_FORMAT="${K8S_DEBUG_OUTPUT_FORMAT:-yaml}"
 
-mkdir -p "${DEBUG_DIRECTORY}"
+mkdir -p "${DUMP_DIR}"
 
-echo "Retrieving information about Kubernetes resources in namespace '${NAMESPACE}'..."
 declare -a resources=("pods" "services" "deployments" "replicasets" "configmaps" "secrets")
-for resource in "${resources[@]}"; do
-  kubectl get "${resource}" \
-    --namespace="${NAMESPACE}" > \
-      "${DEBUG_DIRECTORY}/${resource}"
 
-  kubectl get "${resource}" \
+function dump_resource() {
+  local resource="$1"
+  local objects="$(kubectl get "${resource}" \
     --namespace="${NAMESPACE}" \
-    -o "${OUTPUT_FORMAT}" > \
-      "${DEBUG_DIRECTORY}/${resource}.${OUTPUT_FORMAT}"
-done
+    -o jsonpath='{.items[*].metadata.name}')"
 
-echo "Collecting logs from all pods in namespace '${NAMESPACE}'..."
-PODS=$(kubectl get pods --namespace="${NAMESPACE}" -o jsonpath='{.items[*].metadata.name}')
-for POD in ${PODS}; do
-  LOG_DIR="${DEBUG_DIRECTORY}/logs/${POD}"
-  mkdir -p "${LOG_DIR}"
-  CONTAINERS=$(kubectl get pods "${POD}" --namespace="${NAMESPACE}" -o jsonpath='{.spec.containers[*].name}')
-  for CONTAINER in ${CONTAINERS}; do
-    kubectl logs --namespace="${NAMESPACE}" "${POD}" -c "${CONTAINER}" > "${LOG_DIR}/${CONTAINER}.log"
+  kubectl get "${resource}" --namespace="${NAMESPACE}" | \
+    tee "${DUMP_DIR}/${resource}.get.txt"
+
+  for object in ${objects}; do
+    # Describe the resource in txt format and print it
+    kubectl describe "${resource}" "${object}" \
+      --namespace="${NAMESPACE}" | tee \
+        "${DUMP_DIR}/${resource}.${object}.describe.txt"
+    
+    # Describe the resource in the specified output format and save it
+    kubectl describe "${resource}" "${object}" \
+      --namespace="${NAMESPACE}" \
+      -o "${OUTPUT_FORMAT}" | tee \
+        "${DUMP_DIR}/${resource}.${object}.describe.${OUTPUT_FORMAT}"
   done
-done
+}
 
-echo "All information collected and saved to '${DEBUG_DIRECTORY}'."
+function collect_logs() {
+  local resource="$1"
+  local objects="$(kubectl get "${resource}" \
+    --namespace="${NAMESPACE}" \
+    -o jsonpath='{.items[*].metadata.name}')"
+
+  for object in ${objects}; do
+    LOG_DIR="${DUMP_DIR}/logs/${object}"
+    mkdir -p "${LOG_DIR}"
+    CONTAINERS=$(kubectl get "${resource}" "${object}" --namespace="${NAMESPACE}" -o jsonpath='{.spec.containers[*].name}')
+    for CONTAINER in ${CONTAINERS}; do
+      kubectl logs --namespace="${NAMESPACE}" "${object}" -c "${CONTAINER}" > "${LOG_DIR}/${CONTAINER}.log"
+    done
+  done
+}
+
+
+function main() {
+  echo "Retrieving information about Kubernetes resources in namespace '${NAMESPACE}'..."
+  for resource in "${resources[@]}"; do
+    dump_resource "${resource}"
+  done
+
+  echo "Collecting logs from all pods in namespace '${NAMESPACE}'..."
+  collect_logs "pods"
+
+  echo "All information collected and saved to '${DUMP_DIR}'."
+}
+
+# If script is sourced, don't call main
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main
+fi
