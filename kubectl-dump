@@ -7,7 +7,7 @@ fi
 
 NAMESPACE="$1"
 DATE=$(date '+%Y-%m-%d_%H-%M-%S')
-DEBUG_DIRECTORY="k8s-debug-${NAMESPACE}-${DATE}"
+DEBUG_DIRECTORY="k8s-dump-${NAMESPACE}-${DATE}"
 OUTPUT_FORMAT="${K8S_DEBUG_OUTPUT_FORMAT:-yaml}"
 
 mkdir -p "${DEBUG_DIRECTORY}"
@@ -15,6 +15,10 @@ mkdir -p "${DEBUG_DIRECTORY}"
 echo "Retrieving information about Kubernetes resources in namespace '${NAMESPACE}'..."
 declare -a resources=("pods" "services" "deployments" "replicasets" "configmaps" "secrets")
 for resource in "${resources[@]}"; do
+  kubectl get "${resource}" \
+    --namespace="${NAMESPACE}" > \
+      "${DEBUG_DIRECTORY}/${resource}"
+
   kubectl get "${resource}" \
     --namespace="${NAMESPACE}" \
     -o "${OUTPUT_FORMAT}" > \
