@@ -36,7 +36,7 @@ function dump_resource() {
         "${DUMP_DIR}/${resource}.${object}.describe.txt"
     
     # Describe the resource in the specified output format and save it
-    kubectl describe "${resource}" "${object}" \
+    kubectl get "${resource}" "${object}" \
       --namespace="${NAMESPACE}" \
       -o "${OUTPUT_FORMAT}" > \
         "${DUMP_DIR}/${resource}.${object}.describe.${OUTPUT_FORMAT}"
