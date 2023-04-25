@@ -51,10 +51,10 @@ spec:
         resources:
           requests:
             memory: 1G
-            cpu: 1
+            cpu: 100m
           limits:
-            memory: 16G
-            cpu: 8
+            memory: 1G
+            cpu: 1
         volumeMounts:
           - name: pgdata
             mountPath: /var/lib/postgresql/data

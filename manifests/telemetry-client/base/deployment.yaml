@@ -18,9 +18,12 @@ spec:
         - name: telemetry-client
           image: rancher/telemetry:v0.6.1
           resources:
+            requests:
+              memory: 64Mi
+              cpu: 100m
             limits:
-              memory: '128Mi'
-              cpu: '500m'
+              memory: 128Mi
+              cpu: 1000m
           envFrom:
             - configMapRef:
                 name: telemetry-client
