@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <namespace>"
   exit 1
@@ -20,11 +22,15 @@ function dump_resource() {
     --namespace="${NAMESPACE}" \
     -o jsonpath='{.items[*].metadata.name}')"
 
+  echo "Dumping ${resource}..."
+  echo "=============================="
   kubectl get "${resource}" --namespace="${NAMESPACE}" | \
     tee "${DUMP_DIR}/${resource}.get.txt"
 
   for object in ${objects}; do
     # Describe the resource in txt format and print it
+    echo "Dumping ${resource} '${object}'..."
+    echo "=============================="
     kubectl describe "${resource}" "${object}" \
       --namespace="${NAMESPACE}" | tee \
         "${DUMP_DIR}/${resource}.${object}.describe.txt"
@@ -32,7 +38,7 @@ function dump_resource() {
     # Describe the resource in the specified output format and save it
     kubectl describe "${resource}" "${object}" \
       --namespace="${NAMESPACE}" \
-      -o "${OUTPUT_FORMAT}" | tee \
+      -o "${OUTPUT_FORMAT}" > \
         "${DUMP_DIR}/${resource}.${object}.describe.${OUTPUT_FORMAT}"
   done
 }
@@ -43,12 +49,19 @@ function collect_logs() {
     --namespace="${NAMESPACE}" \
     -o jsonpath='{.items[*].metadata.name}')"
 
+  echo "Collecting logs from ${resource}..."
+  echo "=============================="
   for object in ${objects}; do
     LOG_DIR="${DUMP_DIR}/logs/${object}"
     mkdir -p "${LOG_DIR}"
-    CONTAINERS=$(kubectl get "${resource}" "${object}" --namespace="${NAMESPACE}" -o jsonpath='{.spec.containers[*].name}')
+    CONTAINERS=$(
+      kubectl get "${resource}" "${object}" \
+        --namespace="${NAMESPACE}" \
+        -o jsonpath='{.spec.containers[*].name}'
+    )
     for CONTAINER in ${CONTAINERS}; do
-      kubectl logs --namespace="${NAMESPACE}" "${object}" -c "${CONTAINER}" > "${LOG_DIR}/${CONTAINER}.log"
+      kubectl logs --namespace="${NAMESPACE}" "${object}" -c "${CONTAINER}" | \
+        tee "${LOG_DIR}/${CONTAINER}.log"
     done
   done
 }
