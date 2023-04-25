@@ -6,6 +6,13 @@
 : "${CLUSTER_NAME:=telemetry-dev}"
 # K3s version to use.
 : "${K3S_VERSION:=rancher/k3s:v1.23.6-k3s1}" 
+# Debug mode.
+: "${DEBUG:=false}"
+
+debug_flag=""
+if [ -n "${DEBUG}" ]; then
+  debug_flag="--debug"
+fi
 
 # The cluster IP is determined when the k3d cluster has been created and is any
 # node that forwards HTTP ports to the nodes on the cluster. It can hence be
@@ -52,17 +59,20 @@ function install-rancher() {
     --namespace cert-manager \
     --create-namespace \
     --version v1.5.1 \
+    "${debug_flag}" \
     --atomic
   kubectl wait --namespace cert-manager --for=condition=ready pod --all --timeout=30s
 
   echo "Installing Rancher..."
   helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
   kubectl create namespace cattle-system
+
   helm install rancher rancher-stable/rancher \
     --set bootstrapPassword=admin \
     --namespace cattle-system \
     --set hostname="${HOST_NAME}" \
     --set replicas=1 \
+    "${debug_flag}" \
     --atomic
 
   CLUSTER_IP=$(get-cluster-ip)
