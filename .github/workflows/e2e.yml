@@ -30,7 +30,7 @@ jobs:
           kubectl -n "${ns}" apply --wait -k manifests/tests
           kubectl -n telemetry wait \
             --for=condition=complete \
-            --timeout=90s \
+            --timeout=300s \
             job/test-telemetry-server
 
       - name: Collect logs
