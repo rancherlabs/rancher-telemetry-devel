@@ -13,8 +13,8 @@ environment spins up a local Kubernetes Cluster. It does so using
 
 ## Requirements
 
-- docker
-- k3d
+- k3d (requires docker)
+- helm
 
 ## Quick Start
 
