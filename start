@@ -263,6 +263,10 @@ function install-telemetry-stats-dev() {
   kubectl apply --server-side -k ./manifests/telemetry-stats/dev/
 }
 
+function install-grafana() {
+  kubectl apply --server-side -k ./manifests/grafana
+}
+
 function create-secret {
   if [ "$#" -ne 3 ]; then
     echo >&2 "error: create-secret: argument missing: need 3, have $#"
