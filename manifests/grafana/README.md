@@ -18,3 +18,12 @@ Example:
 ```console
 kubectl apply --server-side -k manifests/grafana
 ```
+
+## TODO
+
+Automatic plugin installation is not yet supported.
+
+Plugins required:
+
+- grafana-worldmap-panel
+- grafana-piechart-panel
